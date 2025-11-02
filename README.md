@@ -12,32 +12,6 @@ and message authentication.
 
 ---
 
-## 📁 Struktura projektu
-ascon_bench/
-│
-├── ascon/
-│ ├── init.py
-│ ├── core.py # ASCON permutation core implementation
-│ ├── aead.py # ASCON-128 (Authenticated Encryption)
-│ ├── hash.py # ASCON-Hash
-│ ├── mac.py # ASCON-MAC
-│ └── reference_adapters.py# AES-GCM, SHA-256, and HMAC-SHA256 wrappers
-│
-├── bench/
-│ ├── init.py
-│ ├── measure.py # Benchmarking tools (timing, CPU, memory)
-│ ├── bench_cli.py # Command-line benchmark controller
-│
-├── results/ # Automatically generated CSV and plots
-│
-├── tests/
-│ └── test_vectors.py # Functional correctness tests
-│
-├── auto_benchmark.py # Automatic benchmarking orchestration script
-├── requirements.txt # Python dependencies
-├── Dockerfile # Reproducible container setup
-└── README.md # Documentation
-
 ## ⚙️ Environment Setup (Manual / Local Mode)
 
 
