@@ -54,18 +54,21 @@ class Ascon128:
 
         ciphertext = b''
         padded = pad(plaintext, rate)
+        original_len = len(plaintext)
         for i in range(0, len(padded), rate):
             block = padded[i:i+rate]
             import struct
             s0 = state[0]
             s0_bytes = s0.to_bytes(8, 'big')
             cblock = xor_bytes(block, s0_bytes[:len(block)])
-            ciphertext += cblock[:len(block)]
+            ciphertext += cblock
 
             pblock = int.from_bytes(block.ljust(8,b'\x00'), 'big')
             state[0] = int.from_bytes(s0_bytes, 'big') ^ pblock
             ascon_permutation(state, rounds=6)
 
+        ciphertext = ciphertext[:original_len]
+        
         import struct
         k0,k1 = struct.unpack('>2Q', self.key)
         state[1] ^= k0
@@ -75,6 +78,49 @@ class Ascon128:
         return ciphertext, tag
 
     def decrypt(self, nonce: bytes, ciphertext: bytes, aad: bytes, tag: bytes) -> Tuple[bytes, bool]:
-        pt, calc_tag = self.encrypt(nonce, ciphertext, aad)
+        state = self._init_state(nonce)
+        rate = 8
+        
+        # Process AAD (same as encrypt)
+        if aad:
+            padded = pad(aad, rate)
+            for i in range(0, len(padded), rate):
+                block = padded[i:i+rate]
+                import struct
+                w = int.from_bytes(block.ljust(8,b'\x00'), 'big')
+                state[0] ^= w
+                ascon_permutation(state, rounds=6)
+        
+        # Decrypt ciphertext (process blocks, pad only last incomplete block for state)
+        plaintext = b''
+        import struct
+        for i in range(0, len(ciphertext), rate):
+            block = ciphertext[i:i+rate]
+            s0 = state[0]
+            s0_bytes = s0.to_bytes(8, 'big')
+            
+            # XOR to get plaintext block
+            pblock = xor_bytes(block, s0_bytes[:len(block)])
+            plaintext += pblock
+            
+            # Update state: need to pad plaintext block for state update
+            if len(pblock) < rate:
+                # Last incomplete block - pad it
+                padded_pblock = pblock + b'\x80' + b'\x00' * (rate - 1 - len(pblock))
+            else:
+                padded_pblock = pblock
+            
+            pblock_int = int.from_bytes(padded_pblock.ljust(8,b'\x00'), 'big')
+            state[0] = s0 ^ pblock_int
+            ascon_permutation(state, rounds=6)
+        
+        # Compute tag
+        import struct
+        k0,k1 = struct.unpack('>2Q', self.key)
+        state[1] ^= k0
+        state[2] ^= k1
+        ascon_permutation(state, rounds=12)
+        calc_tag = state_to_bytes(state)[:16]
+        
         ok = calc_tag == tag
-        return pt, ok
+        return plaintext, ok
