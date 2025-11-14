@@ -5,14 +5,15 @@ from typing import List
 # Referencja: Ascon spec. See: ascon-spec-round2.pdf
 
 ROUND_CONSTANTS = [
-    0x000000000000000f,0x000000000000000e,0x000000000000000d,0x000000000000000c,
-    0x000000000000000b,0x000000000000000a,0x0000000000000009,0x0000000000000008,
-    0x0000000000000007,0x0000000000000006,0x0000000000000005,0x0000000000000004
+    0x00000000000000f0, 0x00000000000000e1, 0x00000000000000d2, 0x00000000000000c3,
+    0x00000000000000b4, 0x00000000000000a5, 0x0000000000000096, 0x0000000000000087,
+    0x0000000000000078, 0x0000000000000069, 0x000000000000005a, 0x000000000000004b
 ]
 
-def rol(x: int, r: int, w: int=64) -> int:
+def rotr(x: int, r: int, w: int=64) -> int:
+    """Rotate right"""
     r %= w
-    return ((x << r) & ((1<<w)-1)) | (x >> (w-r))
+    return (x >> r) | ((x & ((1<<r)-1)) << (w-r))
 
 def ascon_permutation(state: List[int], rounds: int = 12) -> None:
     """
@@ -36,8 +37,8 @@ def ascon_permutation(state: List[int], rounds: int = 12) -> None:
         x0 ^= t1; x1 ^= t2; x2 ^= t3; x3 ^= t4; x4 ^= t0
         x1 ^= x0; x0 ^= x4; x3 ^= x2; x2 = ~x2 & ((1<<64)-1)
 
-        state[0] = x0 ^ rol(x0, 19) ^ rol(x0, 28)
-        state[1] = x1 ^ rol(x1, 61) ^ rol(x1, 39)
-        state[2] = x2 ^ rol(x2, 1)  ^ rol(x2, 6)
-        state[3] = x3 ^ rol(x3, 10) ^ rol(x3, 17)
-        state[4] = x4 ^ rol(x4, 7)  ^ rol(x4, 41)
+        state[0] = x0 ^ rotr(x0, 19) ^ rotr(x0, 28)
+        state[1] = x1 ^ rotr(x1, 61) ^ rotr(x1, 39)
+        state[2] = x2 ^ rotr(x2, 1)  ^ rotr(x2, 6)
+        state[3] = x3 ^ rotr(x3, 10) ^ rotr(x3, 17)
+        state[4] = x4 ^ rotr(x4, 7)  ^ rotr(x4, 41)
